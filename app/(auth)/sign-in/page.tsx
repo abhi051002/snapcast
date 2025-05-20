@@ -2,12 +2,22 @@
 import { authClient } from "@/lib/auth-client";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 
 const page = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSignIn = async () => {
-    return await authClient.signIn.social({ provider: "google" });
+    try {
+      setIsLoading(true);
+      return await authClient.signIn.social({ provider: "google" });
+    } catch (error) {
+      console.error("Sign in failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
   return (
     <main className="sign-in">
       <aside className="testimonial">
@@ -56,6 +66,7 @@ const page = () => {
           <p>&copy; SnapCast {new Date().getFullYear()}</p>
         </div>
       </aside>
+
       <aside className="google-sign-in">
         <section>
           <Link href={"/"}>
@@ -71,14 +82,46 @@ const page = () => {
             Create & share your very first <span>SnapCast Video</span> in no
             time!
           </p>
-          <button onClick={handleSignIn}>
-            <Image
-              src={"/assets/icons/google.svg"}
-              alt="google"
-              width={22}
-              height={22}
-            />
-            <span>Sign in with Google</span>
+          <button
+            onClick={handleSignIn}
+            disabled={isLoading}
+            className={isLoading ? "opacity-70" : ""}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span>Signing in...</span>
+              </div>
+            ) : (
+              <>
+                <Image
+                  src={"/assets/icons/google.svg"}
+                  alt="google"
+                  width={22}
+                  height={22}
+                />
+                <span>Sign in with Google</span>
+              </>
+            )}
           </button>
         </section>
       </aside>
