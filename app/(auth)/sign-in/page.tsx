@@ -34,8 +34,8 @@ const page = () => {
               ))}
             </figure>
             <p>
-              SnapCast makes screen recording easy. From quick walkthrough to
-              full presentations, it's fast, smooth, and shareable in seconds
+              {`SnapCast makes screen recording easy. From quick walkthrough to
+              full presentations, it's fast, smooth, and shareable in seconds`}
             </p>
             <article>
               <Image

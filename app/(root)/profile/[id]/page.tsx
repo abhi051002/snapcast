@@ -3,8 +3,8 @@ import VideoCard from "@/components/VideoCard";
 import { dummyCards } from "@/constants";
 import React from "react";
 
-const page = async ({ params }: ParamsWithSearch) => {
-  const { id } = await params;
+const page = async () => {
+  // const page = async ({ params }: ParamsWithSearch) => {
   return (
     <div className="wrapper page">
       <Header
