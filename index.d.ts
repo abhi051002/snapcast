@@ -77,7 +77,7 @@ declare interface VideoCardProps {
   username: string;
   createdAt: Date;
   views: number;
-  visibility: Visibility;
+  visibility: string;
   duration: number | null;
 }
 

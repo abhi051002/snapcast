@@ -1,0 +1,6 @@
+{
+  "databaseURL": "https://Abhijit-Nanda-s-workspace-s8d53a.eu-central-1.xata.sh/db/jsm_snapcast",
+  "codegen": {
+    "output": "src/xata.ts"
+  }
+}
