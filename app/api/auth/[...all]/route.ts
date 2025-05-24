@@ -2,7 +2,7 @@ import aj from "@/lib/arject";
 import { auth } from "@/lib/auth";
 import { ArcjetDecision, slidingWindow, validateEmail } from "@arcjet/next";
 import { toNextJsHandler } from "better-auth/next-js";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import ip from "@arcjet/ip";
 
 // Email Validation -> BLOCK
@@ -33,6 +33,7 @@ const protectedAuth = async (req: NextRequest): Promise<ArcjetDecision> => {
   } else {
     userId = ip(req) || "127.0.0.1";
   }
+
   if (req.nextUrl.pathname.startsWith("/api/auth/sign-in")) {
     const body = await req.clone().json();
 
@@ -46,22 +47,44 @@ const protectedAuth = async (req: NextRequest): Promise<ArcjetDecision> => {
 const authHandlers = toNextJsHandler(auth.handler);
 
 export const { GET } = authHandlers;
+
 export const POST = async (req: NextRequest) => {
-  const decision = await protectedAuth(req);
+  try {
+    const decision = await protectedAuth(req);
 
-  if (decision.isDenied()) {
-    if (decision.reason.isEmail()) {
-      throw new Error("Email validation failed");
+    if (decision.isDenied()) {
+      let errorMessage = "Authentication failed";
+      let statusCode = 429;
+
+      if (decision.reason.isEmail()) {
+        errorMessage = "Invalid email address. Please use a valid email.";
+        statusCode = 400;
+      } else if (decision.reason.isRateLimit()) {
+        errorMessage =
+          "Too many attempts. Please wait a moment before trying again.";
+        statusCode = 429;
+      } else if (decision.reason.isShield()) {
+        errorMessage = "Request blocked for security reasons.";
+        statusCode = 403;
+      }
+
+      return NextResponse.json(
+        {
+          message: errorMessage,
+          code: decision.reason.isRateLimit()
+            ? "RATE_LIMITED"
+            : "VALIDATION_ERROR",
+        },
+        { status: statusCode }
+      );
     }
 
-    if (decision.reason.isRateLimit()) {
-      throw new Error("Rate limit exceeded");
-    }
-
-    if (decision.reason.isShield()) {
-      throw new Error("Shield turned on, protected against malicious actions");
-    }
+    return authHandlers.POST(req);
+  } catch (error) {
+    console.error("Auth handler error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
-
-  return authHandlers.POST(req);
 };
