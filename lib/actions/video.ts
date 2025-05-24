@@ -18,6 +18,7 @@ const ACCESS_KEYS = {
   streamAccessKey: getEnv("BUNNY_STREAM_ACCESS_KEY"),
   storageAccessKey: getEnv("BUNNY_STORAGE_ACCESS_KEY"),
 };
+
 // Helper Functions
 const getSeesionUserId = async (): Promise<string> => {
   const session = await auth.api.getSession({
@@ -47,11 +48,16 @@ const validateWithArject = async (fingerPrint: string) => {
   );
 
   const req = await request();
-
   const decision = await rateLimit.protect(req, { fingerPrint });
 
   if (decision.isDenied()) {
-    throw new Error("Rate limit exceeded");
+    // Create a user-friendly error with a specific type
+    const error = new Error(
+      "You're uploading videos too quickly. Please wait a moment before trying again."
+    );
+    (error as any).code = "RATE_LIMITED";
+    (error as any).statusCode = 429;
+    throw error;
   }
 };
 
@@ -92,35 +98,47 @@ export const getThumbnailUploadUrl = withErrorHandling(
 
 export const saveVideoDetails = withErrorHandling(
   async (videoDetails: VideoDetails) => {
-    const userId = await getSeesionUserId();
-    await validateWithArject(userId);
-    await apiFetch(
-      `${VIDEO_STREAM_BASE_URL}/${BUNNY_LIBRARY_ID}/videos/${videoDetails.videoId}`,
-      {
-        method: "POST",
-        bunnyType: "stream",
-        body: {
-          title: videoDetails.title,
-          description: videoDetails.description,
-        },
+    try {
+      const userId = await getSeesionUserId();
+      await validateWithArject(userId);
+
+      await apiFetch(
+        `${VIDEO_STREAM_BASE_URL}/${BUNNY_LIBRARY_ID}/videos/${videoDetails.videoId}`,
+        {
+          method: "POST",
+          bunnyType: "stream",
+          body: {
+            title: videoDetails.title,
+            description: videoDetails.description,
+          },
+        }
+      );
+
+      await db.insert(videos).values({
+        videoId: videoDetails.videoId,
+        title: videoDetails.title,
+        description: videoDetails.description,
+        thumbnailUrl: videoDetails.thumbnailUrl,
+        visibility: videoDetails.visibility as "public" | "private",
+        duration: videoDetails.duration,
+        videoUrl: `${BUNNY.EMBED_URL}/${BUNNY_LIBRARY_ID}/${videoDetails.videoId}`,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      revalidatePaths(["/"]);
+
+      return { videoId: videoDetails.videoId };
+    } catch (error: any) {
+      // Re-throw rate limit errors with proper formatting
+      if (error.code === "RATE_LIMITED") {
+        throw error;
       }
-    );
 
-    await db.insert(videos).values({
-      videoId: videoDetails.videoId,
-      title: videoDetails.title,
-      description: videoDetails.description,
-      thumbnailUrl: videoDetails.thumbnailUrl,
-      visibility: videoDetails.visibility as "public" | "private",
-      duration: videoDetails.duration,
-      videoUrl: `${BUNNY.EMBED_URL}/${BUNNY_LIBRARY_ID}/${videoDetails.videoId}`,
-      userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    revalidatePaths(["/"]);
-
-    return { videoId: videoDetails.videoId };
+      // Handle other errors
+      console.error("Error saving video details:", error);
+      throw new Error("Failed to save video. Please try again.");
+    }
   }
 );
