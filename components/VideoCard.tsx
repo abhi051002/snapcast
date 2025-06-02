@@ -14,6 +14,7 @@ const VideoCard = ({
   views,
   duration,
 }: VideoCardProps) => {
+  console.log(duration);
   return (
     <Link href={`/video/${id}`} className="video-card">
       <Image
@@ -65,7 +66,7 @@ const VideoCard = ({
           height={18}
         />
       </button>
-      {duration && (
+      {duration !== 0 && duration && (
         <div className="duration">{Math.ceil(duration / 60)} min</div>
       )}
     </Link>
