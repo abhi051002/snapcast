@@ -10,7 +10,6 @@ import { revalidatePath } from "next/cache";
 import aj from "../arject";
 import { fixedWindow, request } from "@arcjet/next";
 import { and, eq, or, sql } from "drizzle-orm";
-// Removed unused 'number' import
 
 const VIDEO_STREAM_BASE_URL = BUNNY.STREAM_BASE_URL;
 const THUMBNAIL_STORGAE_BASE_URL = BUNNY.STORAGE_BASE_URL;
@@ -196,4 +195,10 @@ export const getAllVideos = withErrorHandling(async (
       pageSize
     }
   }
+})
+
+export const getVideoById = withErrorHandling(async (videoId: string) => {
+  const [videoRecord] = await buildVideoWithUserQuery().where(eq(videos.id, videoId));
+
+  return videoRecord;
 })
