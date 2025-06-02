@@ -6,6 +6,14 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import Toast, { ToastType } from "@/components/Toast"; // Adjust import path as needed
 
+// Define error types for better type safety
+interface AuthError {
+  response?: {
+    status: number;
+  };
+  message?: string;
+}
+
 const user = {};
 
 const Navbar = () => {
@@ -24,6 +32,33 @@ const Navbar = () => {
     setToast(null);
   };
 
+  const handleAuthError = (error: AuthError, context: string) => {
+    console.error(`${context} error:`, error);
+
+    // Handle rate limiting and other errors
+    if (error?.response?.status === 429) {
+      showToast(
+        "Too many requests. Please wait a moment before trying again.",
+        "warning"
+      );
+    } else if (
+      error?.message?.includes("rate limit") ||
+      error?.message?.includes("Rate limit")
+    ) {
+      showToast("Please wait a moment before signing out again.", "warning");
+    } else if (
+      error?.message?.includes("network") ||
+      error?.message?.includes("Network")
+    ) {
+      showToast(
+        "Network error. Please check your connection and try again.",
+        "error"
+      );
+    } else {
+      showToast("Failed to sign out. Please try again.", "error");
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
@@ -38,54 +73,28 @@ const Navbar = () => {
               router.push("/sign-in");
             }, 500);
           },
-          onError: (error: any) => {
-            console.error("Sign out error:", error);
-
-            // Handle rate limiting and other errors
-            if (error?.response?.status === 429) {
-              showToast(
-                "Too many requests. Please wait a moment before trying again.",
-                "warning"
-              );
-            } else if (
-              error?.message?.includes("rate limit") ||
-              error?.message?.includes("Rate limit")
-            ) {
-              showToast(
-                "Please wait a moment before signing out again.",
-                "warning"
-              );
-            } else if (
-              error?.message?.includes("network") ||
-              error?.message?.includes("Network")
-            ) {
-              showToast(
-                "Network error. Please check your connection and try again.",
-                "error"
-              );
-            } else {
-              showToast("Failed to sign out. Please try again.", "error");
-            }
+          onError: (error: AuthError) => {
+            handleAuthError(error, "Sign out");
           },
         },
       });
-    } catch (error: any) {
-      console.error("Sign out failed:", error);
+    } catch (error) {
+      const authError = error as AuthError;
 
       // Handle different types of errors
-      if (error?.response?.status === 429) {
+      if (authError?.response?.status === 429) {
         showToast(
           "Too many sign-out attempts. Please wait a moment before trying again.",
           "warning"
         );
       } else if (
-        error?.message?.includes("rate limit") ||
-        error?.message?.includes("Rate limit")
+        authError?.message?.includes("rate limit") ||
+        authError?.message?.includes("Rate limit")
       ) {
         showToast("Please wait a moment before trying again.", "warning");
       } else if (
-        error?.message?.includes("network") ||
-        error?.message?.includes("Network")
+        authError?.message?.includes("network") ||
+        authError?.message?.includes("Network")
       ) {
         showToast(
           "Network error. Please check your connection and try again.",

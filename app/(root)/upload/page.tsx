@@ -30,7 +30,7 @@ const uploadFileToBunnt = (
   });
 };
 
-const page = () => {
+const UploadPage = () => {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -43,6 +43,7 @@ const page = () => {
   const video = useFileInput(MAX_VIDEO_SIZE);
   const thumbnail = useFileInput(MAX_THUMBNAIL_SIZE);
   const [error, setError] = useState("");
+
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -52,6 +53,7 @@ const page = () => {
       [name]: value,
     }));
   };
+
   useEffect(() => {
     if (video.duration !== null || 0) {
       setVideoDuration(video.duration);
@@ -181,4 +183,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default UploadPage;

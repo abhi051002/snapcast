@@ -5,7 +5,7 @@ import Link from "next/link";
 import React, { useState } from "react";
 import Toast, { ToastType } from "@/components/Toast"; // Adjust import path as needed
 
-const page = () => {
+const SignInPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
@@ -31,40 +31,52 @@ const page = () => {
         return;
       }
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sign in failed:", error);
 
-      if (error?.response?.status === 429) {
+      // Type guard to check if error has the expected properties
+      const isErrorWithResponse = (
+        err: unknown
+      ): err is { response: { status: number } } => {
+        return typeof err === "object" && err !== null && "response" in err;
+      };
+
+      const isErrorWithMessage = (err: unknown): err is { message: string } => {
+        return typeof err === "object" && err !== null && "message" in err;
+      };
+
+      if (isErrorWithResponse(error) && error.response?.status === 429) {
         showToast(
           "Too many sign-in attempts. Please wait a moment before trying again.",
           "warning"
         );
-      } else if (error?.response?.status === 400) {
+      } else if (isErrorWithResponse(error) && error.response?.status === 400) {
         showToast("Invalid email address. Please use a valid email.", "error");
-      } else if (error?.response?.status === 403) {
+      } else if (isErrorWithResponse(error) && error.response?.status === 403) {
         showToast(
           "Sign-in blocked for security reasons. Please try again later.",
           "error"
         );
       } else if (
-        error?.message?.includes("rate limit") ||
-        error?.message?.includes("Rate limit")
+        isErrorWithMessage(error) &&
+        (error.message.includes("rate limit") ||
+          error.message.includes("Rate limit"))
       ) {
         showToast(
           "Too many attempts. Please wait a moment before trying again.",
           "warning"
         );
       } else if (
-        error?.message?.includes("network") ||
-        error?.message?.includes("Network")
+        isErrorWithMessage(error) &&
+        (error.message.includes("network") || error.message.includes("Network"))
       ) {
         showToast(
           "Network error. Please check your connection and try again.",
           "error"
         );
       } else if (
-        error?.message?.includes("popup") ||
-        error?.message?.includes("window")
+        isErrorWithMessage(error) &&
+        (error.message.includes("popup") || error.message.includes("window"))
       ) {
         showToast(
           "Sign-in popup was blocked or closed. Please try again and allow popups.",
@@ -205,4 +217,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default SignInPage;

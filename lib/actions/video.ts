@@ -10,7 +10,7 @@ import { revalidatePath } from "next/cache";
 import aj from "../arject";
 import { fixedWindow, request } from "@arcjet/next";
 import { and, eq, or, sql } from "drizzle-orm";
-import { number } from "better-auth";
+// Removed unused 'number' import
 
 const VIDEO_STREAM_BASE_URL = BUNNY.STREAM_BASE_URL;
 const THUMBNAIL_STORGAE_BASE_URL = BUNNY.STORAGE_BASE_URL;
@@ -45,6 +45,12 @@ const revalidatePaths = (paths: string[]) => {
   paths.forEach((path) => revalidatePath(path));
 };
 
+// Define proper error type interface
+interface RateLimitError extends Error {
+  code: string;
+  statusCode: number;
+}
+
 // Validator Functions
 const validateWithArject = async (fingerPrint: string) => {
   const rateLimit = aj.withRule(
@@ -63,16 +69,17 @@ const validateWithArject = async (fingerPrint: string) => {
     // Create a user-friendly error with a specific type
     const error = new Error(
       "You're uploading videos too quickly. Please wait a moment before trying again."
-    );
-    (error as any).code = "RATE_LIMITED";
-    (error as any).statusCode = 429;
+    ) as RateLimitError;
+    error.code = "RATE_LIMITED";
+    error.statusCode = 429;
     throw error;
   }
 };
 
 // Server Actions
 export const getVideoUploadUrl = withErrorHandling(async () => {
-  const getSessionUserId = await getSeesionUserId();
+  // Removed unused variable 'getSessionUserId' - the function call was not being used
+  await getSeesionUserId(); // Call the function if authentication check is needed
 
   const videoResponse = await apiFetch<BunnyVideoResponse>(
     `${VIDEO_STREAM_BASE_URL}/${BUNNY_LIBRARY_ID}/videos`,
@@ -139,9 +146,9 @@ export const saveVideoDetails = withErrorHandling(
       revalidatePaths(["/"]);
 
       return { videoId: videoDetails.videoId };
-    } catch (error: any) {
-      // Re-throw rate limit errors with proper formatting
-      if (error.code === "RATE_LIMITED") {
+    } catch (error: unknown) {
+      // Handle rate limit errors with proper type checking
+      if (error instanceof Error && 'code' in error && (error as RateLimitError).code === "RATE_LIMITED") {
         throw error;
       }
 
@@ -165,7 +172,6 @@ export const getAllVideos = withErrorHandling(async (
     eq(videos.visibility, 'public'),
     eq(videos.userId, currentUserId!),
   );
-
 
   const whereCondition = searchQuery.trim() ? and(canSeeTheVideos, doesTitleMatch(videos, searchQuery)) : canSeeTheVideos;
 
