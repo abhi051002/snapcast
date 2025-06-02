@@ -14,10 +14,11 @@ interface AuthError {
   message?: string;
 }
 
-const user = {};
 
 const Navbar = () => {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
@@ -110,7 +111,7 @@ const Navbar = () => {
 
   const handleProfileNavigation = () => {
     try {
-      router.push("/profile/12345");
+      router.push(`/profile/${user?.id}`);
     } catch (error) {
       console.error("Navigation error:", error);
       showToast("Failed to navigate to profile. Please try again.", "error");
@@ -138,7 +139,7 @@ const Navbar = () => {
                 aria-label="Go to profile"
               >
                 <Image
-                  src="/assets/images/dummy.jpg"
+                  src={user?.image || "/assets/aegims / dummy.jpg"}
                   alt="User profile"
                   width={36}
                   height={36}
