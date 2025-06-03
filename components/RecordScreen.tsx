@@ -1,7 +1,6 @@
 "use client";
 import { ICONS } from "@/constants";
 import { useScreenRecording } from "@/lib/hooks/useScreenRecording";
-import { duration } from "drizzle-orm/gel-core";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useRef, useState } from "react";

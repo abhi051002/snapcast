@@ -1,7 +1,6 @@
 import EmptyState from "@/components/EmptyState";
 import Header from "@/components/Header";
 import VideoCard from "@/components/VideoCard";
-import { dummyCards } from "@/constants";
 import { getAllVideosByUser } from "@/lib/actions/video";
 import { redirect } from "next/navigation";
 import React from "react";
